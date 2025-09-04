@@ -217,6 +217,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/escalations/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      const updatedEscalation = await storage.updateEscalation(id, { status });
+      res.json(updatedEscalation);
+    } catch (error) {
+      console.error("Update escalation error:", error);
+      res.status(500).json({ message: "Failed to update escalation" });
+    }
+  });
+
   // Metrics route
   app.get("/api/metrics", async (req, res) => {
     try {

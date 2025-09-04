@@ -19,6 +19,7 @@ export default function AdminDashboard() {
   const [, setLocation] = useLocation();
   const [selectedEscalation, setSelectedEscalation] = useState<string | null>(null);
   const [supportChatOpen, setSupportChatOpen] = useState(false);
+  const [resolveLoading, setResolveLoading] = useState<string | null>(null);
 
   const { data: metrics } = useQuery<{ totalChats: number; totalEscalations: number; avgConfidence: number }>({
     queryKey: ['/api/metrics'],
@@ -36,6 +37,27 @@ export default function AdminDashboard() {
   const handleLogout = () => {
     authService.logout();
     setLocation('/login');
+  };
+
+  const handleResolveEscalation = async (escalationId: string) => {
+    setResolveLoading(escalationId);
+    try {
+      await fetch(`/api/escalations/${escalationId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'resolved' })
+      });
+      
+      // Refetch escalations to update the list
+      window.location.reload();
+      setSelectedEscalation(null);
+    } catch (error) {
+      console.error('Failed to resolve escalation:', error);
+    } finally {
+      setResolveLoading(null);
+    }
   };
 
   if (!user || user.role !== 'admin') {
@@ -144,19 +166,44 @@ export default function AdminDashboard() {
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <h4 className="font-medium text-foreground" data-testid={`text-escalation-email-${escalation.id}`}>
-                          {escalation.userEmail}
-                        </h4>
-                        <Badge variant={getStatusBadgeVariant(escalation.status || 'pending')} data-testid={`badge-escalation-status-${escalation.id}`}>
-                          {(escalation.status === 'pending' || !escalation.status) ? 'Escalated' : escalation.status}
-                        </Badge>
+                        <div className="flex items-center justify-between w-full">
+                          <h4 className="font-medium text-foreground" data-testid={`text-escalation-email-${escalation.id}`}>
+                            {escalation.userEmail}
+                          </h4>
+                          <div className="flex items-center space-x-2">
+                            <Badge variant={getStatusBadgeVariant(escalation.status || 'pending')} data-testid={`badge-escalation-status-${escalation.id}`}>
+                              {(escalation.status === 'pending' || !escalation.status) ? 'Escalated' : escalation.status}
+                            </Badge>
+                            {(escalation.status === 'pending' || !escalation.status) && (
+                              <Button 
+                                size="sm" 
+                                variant="default"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleResolveEscalation(escalation.id);
+                                }}
+                                disabled={resolveLoading === escalation.id}
+                                data-testid={`button-quick-resolve-${escalation.id}`}
+                              >
+                                {resolveLoading === escalation.id ? 'Resolving...' : 'Resolve'}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2" data-testid={`text-escalation-message-${escalation.id}`}>
-                        Last message: "{escalation.lastMessage}"
-                      </p>
-                      <p className="text-xs text-muted-foreground" data-testid={`text-escalation-details-${escalation.id}`}>
-                        Confidence: {escalation.confidence.toFixed(2)} | {formatTimeAgo(escalation.createdAt || new Date())}
-                      </p>
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground" data-testid={`text-escalation-message-${escalation.id}`}>
+                          <span className="font-medium">Last message:</span> "{escalation.lastMessage}"
+                        </p>
+                        <div className="flex justify-between items-center text-xs text-muted-foreground">
+                          <span data-testid={`text-escalation-confidence-${escalation.id}`}>
+                            Confidence: {escalation.confidence.toFixed(2)}
+                          </span>
+                          <span data-testid={`text-escalation-time-${escalation.id}`}>
+                            {formatTimeAgo(escalation.createdAt || new Date())}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                     <Button size="sm" data-testid={`button-view-escalation-${escalation.id}`}>
                       View Chat
@@ -219,11 +266,13 @@ export default function AdminDashboard() {
               </div>
               
               <div className="flex space-x-3 pt-4 border-t border-border">
-                <Button size="sm" data-testid="button-assign-agent">
-                  Assign to Agent
-                </Button>
-                <Button variant="secondary" size="sm" data-testid="button-mark-resolved">
-                  Mark Resolved
+                <Button 
+                  size="sm" 
+                  onClick={() => handleResolveEscalation(selectedEscalation!)}
+                  disabled={resolveLoading === selectedEscalation}
+                  data-testid="button-mark-resolved"
+                >
+                  {resolveLoading === selectedEscalation ? 'Resolving...' : 'Mark Resolved'}
                 </Button>
                 <Button 
                   variant="outline" 

@@ -140,7 +140,7 @@ export function SupportChat({ isOpen, onToggle }: SupportChatProps) {
   if (!isOpen) return null;
 
   return (
-    <Card className="fixed bottom-4 right-4 w-96 h-[600px] flex flex-col shadow-xl z-50 md:w-96 sm:w-full sm:h-full sm:bottom-0 sm:right-0 sm:left-0 sm:rounded-none">
+    <Card className="fixed bottom-4 right-4 w-[480px] h-[700px] flex flex-col shadow-xl z-50 md:w-[480px] sm:w-full sm:h-full sm:bottom-0 sm:right-0 sm:left-0 sm:rounded-none">
       <CardHeader className="bg-primary text-primary-foreground p-4 flex flex-row items-center justify-between space-y-0">
         <h3 className="font-semibold" data-testid="text-chat-title">Customer Support</h3>
         <Button
@@ -192,7 +192,7 @@ export function SupportChat({ isOpen, onToggle }: SupportChatProps) {
         </div>
       </div>
 
-      <CardContent className="flex-1 p-4 overflow-y-auto" style={{ maxHeight: '300px' }}>
+      <CardContent className="flex-1 p-4 overflow-y-auto" style={{ maxHeight: '420px' }}>
         <div className="space-y-3">
           {messages.map((message, index) => (
             <div key={index} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -240,22 +240,33 @@ export function SupportChat({ isOpen, onToggle }: SupportChatProps) {
       </CardContent>
 
       <div className="p-4 border-t border-border">
-        <div className="flex space-x-2">
-          <Input
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Type your message..."
-            className="flex-1"
-            disabled={isLoading}
-            data-testid="input-chat-message"
-          />
-          <Button 
-            onClick={handleSendMessage} 
-            disabled={isLoading || !inputMessage.trim()}
-            data-testid="button-send-message"
+        <div className="flex flex-col space-y-2">
+          <div className="flex space-x-2">
+            <Input
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Type your message..."
+              className="flex-1"
+              disabled={isLoading}
+              data-testid="input-chat-message"
+            />
+            <Button 
+              onClick={handleSendMessage} 
+              disabled={isLoading || !inputMessage.trim()}
+              data-testid="button-send-message"
+            >
+              Send
+            </Button>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-sm"
+            onClick={handleEscalateToHuman}
+            data-testid="button-escalate-cta"
           >
-            Send
+            Need Human Help? Escalate to Agent
           </Button>
         </div>
       </div>

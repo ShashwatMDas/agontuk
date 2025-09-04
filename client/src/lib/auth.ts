@@ -16,7 +16,7 @@ class AuthService {
     password: string
   ): Promise<Pick<User, "id" | "email" | "role">> {
     const response = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/auth/login`,
+      `https://agontuk.onrender.com/api/auth/login`,
       {
         method: "POST",
         headers: {
@@ -46,7 +46,7 @@ class AuthService {
     role: string = "customer"
   ): Promise<Pick<User, "id" | "email" | "role">> {
     const response = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/auth/register`,
+      `https://agontuk.onrender.com/api/auth/register`,
       {
         method: "POST",
         headers: {

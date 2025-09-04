@@ -13,7 +13,7 @@ class GPTService {
     chatId?: string
   ): Promise<ChatResponse> {
     const response = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/chat/message`,
+      `https://agontuk.onrender.com/api/chat/message`,
       {
         method: "POST",
         headers: {
@@ -39,7 +39,7 @@ class GPTService {
     userId: string
   ): Promise<void> {
     const response = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/escalations`,
+      `https://agontuk.onrender.com/api/escalations`,
       {
         method: "POST",
         headers: {
@@ -58,7 +58,7 @@ class GPTService {
 
   async getChat(chatId: string): Promise<{ messages: ChatMessage[] }> {
     const response = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/chat/${chatId}`
+      `https://agontuk.onrender.com/api/chat/${chatId}`
     );
 
     if (!response.ok) {

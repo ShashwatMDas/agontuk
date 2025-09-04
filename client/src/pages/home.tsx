@@ -15,7 +15,7 @@ export default function Home() {
   const [supportChatOpen, setSupportChatOpen] = useState(false);
 
   const { data: products, isLoading } = useQuery<Product[]>({
-    queryKey: [`${import.meta.env.VITE_BACKEND_URL}/api/products`],
+    queryKey: [`https://agontuk.onrender.com/api/products`],
   });
 
   const handleLogout = () => {

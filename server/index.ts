@@ -4,7 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import cors from "cors";
 
 const corsOptions = {
-  origin: "https://agontukbiimk.netlify.app/", // adjust to your frontend URL and port
+  origin: "https://agontukbiimk.netlify.app", // adjust to your frontend URL and port
   credentials: true,
   methods: ["GET", "POST", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "user-id"],

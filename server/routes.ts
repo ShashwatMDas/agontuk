@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertChatSchema, insertEscalationSchema } from "@shared/schema";
+import { insertUserSchema, insertChatSchema, insertEscalationSchema, ChatMessage } from "@shared/schema";
 import { z } from "zod";
 
 const loginSchema = z.object({

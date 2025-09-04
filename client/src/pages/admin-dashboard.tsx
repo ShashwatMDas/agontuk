@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { SupportChat, SupportToggle } from "@/components/support-chat";
 import { useCurrentUser } from "@/components/auth-guard";
 import { authService } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
@@ -17,6 +18,7 @@ export default function AdminDashboard() {
   const user = useCurrentUser();
   const [, setLocation] = useLocation();
   const [selectedEscalation, setSelectedEscalation] = useState<string | null>(null);
+  const [supportChatOpen, setSupportChatOpen] = useState(false);
 
   const { data: metrics } = useQuery<{ totalChats: number; totalEscalations: number; avgConfidence: number }>({
     queryKey: ['/api/metrics'],
@@ -145,15 +147,15 @@ export default function AdminDashboard() {
                         <h4 className="font-medium text-foreground" data-testid={`text-escalation-email-${escalation.id}`}>
                           {escalation.userEmail}
                         </h4>
-                        <Badge variant={getStatusBadgeVariant(escalation.status)} data-testid={`badge-escalation-status-${escalation.id}`}>
-                          {escalation.status === 'pending' ? 'Escalated' : escalation.status}
+                        <Badge variant={getStatusBadgeVariant(escalation.status || 'pending')} data-testid={`badge-escalation-status-${escalation.id}`}>
+                          {(escalation.status === 'pending' || !escalation.status) ? 'Escalated' : escalation.status}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground mb-2" data-testid={`text-escalation-message-${escalation.id}`}>
                         Last message: "{escalation.lastMessage}"
                       </p>
                       <p className="text-xs text-muted-foreground" data-testid={`text-escalation-details-${escalation.id}`}>
-                        Confidence: {escalation.confidence.toFixed(2)} | {formatTimeAgo(escalation.createdAt!)}
+                        Confidence: {escalation.confidence.toFixed(2)} | {formatTimeAgo(escalation.createdAt || new Date())}
                       </p>
                     </div>
                     <Button size="sm" data-testid={`button-view-escalation-${escalation.id}`}>
@@ -187,7 +189,7 @@ export default function AdminDashboard() {
                   Customer: {escalationDetail.userEmail}
                 </p>
                 <p className="text-xs text-muted-foreground" data-testid="text-escalation-meta">
-                  Escalated: {formatTimeAgo(escalationDetail.createdAt!)} | Confidence: {escalationDetail.confidence.toFixed(2)}
+                  Escalated: {formatTimeAgo(escalationDetail.createdAt || new Date())} | Confidence: {escalationDetail.confidence.toFixed(2)}
                 </p>
               </div>
               

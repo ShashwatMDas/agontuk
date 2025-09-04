@@ -150,7 +150,8 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
     const user: User = { 
-      ...insertUser, 
+      ...insertUser,
+      role: insertUser.role || 'customer',
       id,
       createdAt: new Date()
     };
@@ -170,6 +171,9 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const chat: Chat = {
       ...insertChat,
+      isEscalated: insertChat.isEscalated ?? false,
+      escalatedAt: insertChat.escalatedAt ?? null,
+      avgConfidence: insertChat.avgConfidence ?? null,
       id,
       createdAt: new Date()
     };
@@ -198,6 +202,7 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const escalation: Escalation = {
       ...insertEscalation,
+      status: insertEscalation.status ?? 'pending',
       id,
       createdAt: new Date()
     };

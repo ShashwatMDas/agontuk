@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcomSupport - GPT-Powered Customer Support</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                borderRadius: {
+                    lg: "var(--radius)",
+                    md: "calc(var(--radius) - 2px)",
+                    sm: "calc(var(--radius) - 4px)",
+                },
+                colors: {
+                    background: "var(--background)",
+                    foreground: "var(--foreground)",
+                    card: {
+                        DEFAULT: "var(--card)",
+                        foreground: "var(--card-foreground)",
+                    },
+                    primary: {
+                        DEFAULT: "var(--primary)",
+                        foreground: "var(--primary-foreground)",
+                    },
+                    secondary: {
+                        DEFAULT: "var(--secondary)",
+                        foreground: "var(--secondary-foreground)",
+                    },
+                    muted: {
+                        DEFAULT: "var(--muted)",
+                        foreground: "var(--muted-foreground)",
+                    },
+                    accent: {
+                        DEFAULT: "var(--accent)",
+                        foreground: "var(--accent-foreground)",
+                    },
+                    border: "var(--border)",
+                    input: "var(--input)",
+                    ring: "var(--ring)",
+                }
+            },
+        }
+    };
+    </script>
+    <style>
+        :root {
+            --background: hsl(210 40% 98%);
+            --foreground: hsl(215 25% 27%);
+            --card: hsl(0 0% 100%);
+            --card-foreground: hsl(215 25% 27%);
+            --primary: hsl(217 91% 60%);
+            --primary-foreground: hsl(0 0% 100%);
+            --secondary: hsl(215 16% 47%);
+            --secondary-foreground: hsl(215 25% 27%);
+            --muted: hsl(215 16% 97%);
+            --muted-foreground: hsl(215 16% 47%);
+            --accent: hsl(142 69% 58%);
+            --accent-foreground: hsl(0 0% 100%);
+            --border: hsl(215 12% 92%);
+            --input: hsl(215 12% 92%);
+            --ring: hsl(217 91% 60%);
+            --radius: 8px;
+        }
+        
+        .chat-bubble-user {
+            background: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 70%));
+        }
+        
+        .chat-bubble-bot {
+            background: hsl(215 16% 97%);
+            border: 1px solid hsl(215 12% 92%);
+        }
+        
+        .support-chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 380px;
+            height: 600px;
+            z-index: 1000;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .support-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1001;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 70%));
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .support-chat-container {
+                bottom: 0;
+                right: 0;
+                left: 0;
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground font-sans">
+    
+    <!-- @COMPONENT: App [main application container] -->
+    <div id="app" class="min-h-screen">
+        
+        <!-- Login Screen -->
+        <!-- @COMPONENT: LoginScreen [authentication interface] -->
+        <div id="login-screen" class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+            <div class="bg-card rounded-lg shadow-xl p-8 w-full max-w-md">
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-bold text-primary mb-2">EcomSupport</h1>
+                    <p class="text-muted-foreground">Sign in to your account</p>
+                </div>
+                
+                <form class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-foreground mb-2">Email</label>
+                        <input type="email" class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Enter your email" data-mock="true">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-foreground mb-2">Password</label>
+                        <input type="password" class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring" placeholder="Enter your password" data-mock="true">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-foreground mb-2">Role</label>
+                        <select id="role-select" class="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring">
+                            <option value="customer">Customer</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    
+                    <button type="button" onclick="handleLogin()" class="w-full bg-primary text-primary-foreground py-2 px-4 rounded-md hover:bg-primary/90 transition-colors font-medium">
+                        Sign In
+                    </button>
+                </form>
+                
+                <div class="mt-6 text-center text-sm text-muted-foreground">
+                    <p>Demo Accounts:</p>
+                    <p>Customer: customer@demo.com / password</p>
+                    <p>Admin: admin@demo.com / password</p>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: LoginScreen -->
+        
+        <!-- Customer E-commerce Interface -->
+        <!-- @COMPONENT: CustomerInterface [main shopping interface] -->
+        <div id="customer-interface" class="hidden">
+            <!-- Navigation Header -->
+            <nav class="bg-card border-b border-border sticky top-0 z-50">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center h-16">
+                        <div class="flex items-center">
+                            <h1 class="text-xl font-bold text-primary">EcomStore</h1>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-sm text-muted-foreground" data-bind="user.email">customer@demo.com</span>
+                            <button onclick="handleLogout()" class="text-sm text-muted-foreground hover:text-foreground">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+            
+            <!-- Hero Section -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-16">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <h2 class="text-4xl font-bold mb-4">Summer Sale - Up to 50% Off</h2>
+                    <p class="text-xl opacity-90">Discover amazing deals on top brands</p>
+                </div>
+            </div>
+            
+            <!-- Product Grid -->
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <h3 class="text-2xl font-bold text-foreground mb-8">Featured Products</h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- @MAP: products.map(product => ( -->
+                    
+                    <!-- Modern wireless headphones with active noise cancellation -->
+                    <div class="bg-card rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" data-mock="true">
+                        <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&h=300" alt="Wireless Headphones" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h4 class="font-semibold text-foreground mb-2">Premium Wireless Headphones</h4>
+                            <p class="text-muted-foreground text-sm mb-3">Active noise cancellation, 30hr battery</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-bold text-primary">$199.99</span>
+                                <button class="bg-primary text-primary-foreground px-3 py-1 rounded text-sm hover:bg-primary/90">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sleek laptop computer for professional work -->
+                    <div class="bg-card rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" data-mock="true">
+                        <img src="https://images.unsplash.com/photo-1496181133206-80ce9b88a853?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&h=300" alt="Laptop Computer" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h4 class="font-semibold text-foreground mb-2">Ultra-thin Laptop</h4>
+                            <p class="text-muted-foreground text-sm mb-3">Intel i7, 16GB RAM, 512GB SSD</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-bold text-primary">$1,299.99</span>
+                                <button class="bg-primary text-primary-foreground px-3 py-1 rounded text-sm hover:bg-primary/90">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Stylish smartwatch with fitness tracking features -->
+                    <div class="bg-card rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" data-mock="true">
+                        <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&h=300" alt="Smart Watch" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h4 class="font-semibold text-foreground mb-2">Smart Fitness Watch</h4>
+                            <p class="text-muted-foreground text-sm mb-3">Heart rate monitor, GPS, waterproof</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-bold text-primary">$299.99</span>
+                                <button class="bg-primary text-primary-foreground px-3 py-1 rounded text-sm hover:bg-primary/90">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- High-quality camera for photography enthusiasts -->
+                    <div class="bg-card rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" data-mock="true">
+                        <img src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&h=300" alt="Digital Camera" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h4 class="font-semibold text-foreground mb-2">Professional Camera</h4>
+                            <p class="text-muted-foreground text-sm mb-3">24MP, 4K video, weather sealed</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-bold text-primary">$899.99</span>
+                                <button class="bg-primary text-primary-foreground px-3 py-1 rounded text-sm hover:bg-primary/90">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Wireless gaming mouse with RGB lighting -->
+                    <div class="bg-card rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" data-mock="true">
+                        <img src="https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&h=300" alt="Gaming Mouse" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h4 class="font-semibold text-foreground mb-2">Gaming Mouse Pro</h4>
+                            <p class="text-muted-foreground text-sm mb-3">RGB lighting, 12000 DPI, wireless</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-bold text-primary">$89.99</span>
+                                <button class="bg-primary text-primary-foreground px-3 py-1 rounded text-sm hover:bg-primary/90">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Premium smartphone with advanced camera system -->
+                    <div class="bg-card rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" data-mock="true">
+                        <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&h=300" alt="Smartphone" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h4 class="font-semibold text-foreground mb-2">Flagship Smartphone</h4>
+                            <p class="text-muted-foreground text-sm mb-3">128GB, Triple camera, 5G ready</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-bold text-primary">$799.99</span>
+                                <button class="bg-primary text-primary-foreground px-3 py-1 rounded text-sm hover:bg-primary/90">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Comfortable wireless earbuds for daily use -->
+                    <div class="bg-card rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" data-mock="true">
+                        <img src="https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&h=300" alt="Wireless Earbuds" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h4 class="font-semibold text-foreground mb-2">True Wireless Earbuds</h4>
+                            <p class="text-muted-foreground text-sm mb-3">6hr battery, fast charging case</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-bold text-primary">$149.99</span>
+                                <button class="bg-primary text-primary-foreground px-3 py-1 rounded text-sm hover:bg-primary/90">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- High-performance wireless keyboard for productivity -->
+                    <div class="bg-card rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow" data-mock="true">
+                        <img src="https://images.unsplash.com/photo-1541140532154-b024d705b90a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=400&h=300" alt="Mechanical Keyboard" class="w-full h-48 object-cover">
+                        <div class="p-4">
+                            <h4 class="font-semibold text-foreground mb-2">Mechanical Keyboard</h4>
+                            <p class="text-muted-foreground text-sm mb-3">Backlit keys, wireless, tactile switches</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-bold text-primary">$159.99</span>
+                                <button class="bg-primary text-primary-foreground px-3 py-1 rounded text-sm hover:bg-primary/90">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- @END_MAP )) -->
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <footer class="bg-muted mt-16 py-12">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                    <p class="text-muted-foreground">&copy; 2024 EcomStore. All rights reserved.</p>
+                </div>
+            </footer>
+        </div>
+        <!-- @END_COMPONENT: CustomerInterface -->
+        
+        <!-- Support Chat Toggle Button -->
+        <button id="support-toggle" class="support-toggle rounded-full flex items-center justify-center text-white hover:scale-105 transition-transform hidden" onclick="toggleSupportChat()">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-2.697-.413l-2.03.683a1 1 0 01-1.28-1.28l.683-2.03A8.955 8.955 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z"></path>
+            </svg>
+        </button>
+        
+        <!-- Support Chat Container -->
+        <!-- @COMPONENT: SupportChat [customer support interface] -->
+        <div id="support-chat" class="support-chat-container bg-card rounded-lg hidden flex-col">
+            <!-- Chat Header -->
+            <div class="bg-primary text-primary-foreground p-4 rounded-t-lg flex justify-between items-center">
+                <h3 class="font-semibold">Customer Support</h3>
+                <button onclick="toggleSupportChat()" class="text-primary-foreground hover:text-primary-foreground/80">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- FAQ Section -->
+            <div class="p-4 border-b border-border">
+                <h4 class="font-medium text-foreground mb-3">Quick Help</h4>
+                
+                <!-- FAQ Categories -->
+                <div class="mb-4">
+                    <div class="flex space-x-2 mb-3">
+                        <button onclick="showFAQCategory('orders')" class="faq-tab px-3 py-1 text-sm rounded bg-primary text-primary-foreground">Orders</button>
+                        <button onclick="showFAQCategory('payments')" class="faq-tab px-3 py-1 text-sm rounded bg-muted text-muted-foreground">Payments & Refunds</button>
+                    </div>
+                    
+                    <!-- Orders FAQs -->
+                    <div id="orders-faqs" class="faq-category space-y-2">
+                        <button onclick="selectFAQ('Where is my order?')" class="w-full text-left text-sm bg-muted hover:bg-muted/80 p-2 rounded">Where is my order?</button>
+                        <button onclick="selectFAQ('How can I track my package?')" class="w-full text-left text-sm bg-muted hover:bg-muted/80 p-2 rounded">How can I track my package?</button>
+                        <button onclick="selectFAQ('Can I change my delivery address?')" class="w-full text-left text-sm bg-muted hover:bg-muted/80 p-2 rounded">Can I change my delivery address?</button>
+                    </div>
+                    
+                    <!-- Payments & Refunds FAQs -->
+                    <div id="payments-faqs" class="faq-category space-y-2 hidden">
+                        <button onclick="selectFAQ('What is your return policy?')" class="w-full text-left text-sm bg-muted hover:bg-muted/80 p-2 rounded">What is your return policy?</button>
+                        <button onclick="selectFAQ('How do I request a refund?')" class="w-full text-left text-sm bg-muted hover:bg-muted/80 p-2 rounded">How do I request a refund?</button>
+                        <button onclick="selectFAQ('When will I receive my refund?')" class="w-full text-left text-sm bg-muted hover:bg-muted/80 p-2 rounded">When will I receive my refund?</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chat Messages -->
+            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto" style="max-height: 300px;">
+                <div class="space-y-3">
+                    <div class="flex items-start space-x-2">
+                        <div class="chat-bubble-bot text-foreground p-3 rounded-lg max-w-xs">
+                            <p class="text-sm">Hello! I'm your AI assistant. How can I help you today?</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chat Input -->
+            <div class="p-4 border-t border-border">
+                <div class="flex space-x-2">
+                    <input id="chat-input" type="text" placeholder="Type your message..." class="flex-1 px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-sm" onkeypress="handleChatKeyPress(event)">
+                    <button onclick="sendMessage()" class="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 text-sm">Send</button>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: SupportChat -->
+        
+        <!-- Admin Dashboard -->
+        <!-- @COMPONENT: AdminDashboard [admin interface for managing support] -->
+        <div id="admin-interface" class="hidden min-h-screen bg-background">
+            <!-- Admin Navigation -->
+            <nav class="bg-card border-b border-border">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center h-16">
+                        <div class="flex items-center">
+                            <h1 class="text-xl font-bold text-primary">Admin Dashboard</h1>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-sm text-muted-foreground" data-bind="user.email">admin@demo.com</span>
+                            <button onclick="handleLogout()" class="text-sm text-muted-foreground hover:text-foreground">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+            
+            <!-- Dashboard Content -->
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Metrics Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-card p-6 rounded-lg shadow-sm border border-border">
+                        <h3 class="text-sm font-medium text-muted-foreground">Total Chats</h3>
+                        <p class="text-2xl font-bold text-foreground mt-2" data-bind="metrics.totalChats">247</p>
+                    </div>
+                    <div class="bg-card p-6 rounded-lg shadow-sm border border-border">
+                        <h3 class="text-sm font-medium text-muted-foreground">Escalations</h3>
+                        <p class="text-2xl font-bold text-foreground mt-2" data-bind="metrics.totalEscalations">12</p>
+                    </div>
+                    <div class="bg-card p-6 rounded-lg shadow-sm border border-border">
+                        <h3 class="text-sm font-medium text-muted-foreground">Avg Confidence</h3>
+                        <p class="text-2xl font-bold text-foreground mt-2" data-bind="metrics.avgConfidence">0.78</p>
+                    </div>
+                </div>
+                
+                <!-- Escalations List -->
+                <div class="bg-card rounded-lg shadow-sm border border-border">
+                    <div class="p-6 border-b border-border">
+                        <h2 class="text-lg font-semibold text-foreground">Escalated Conversations</h2>
+                    </div>
+                    
+                    <div class="divide-y divide-border">
+                        <!-- @MAP: escalations.map(escalation => ( -->
+                        <div class="p-6 hover:bg-muted/50 cursor-pointer" onclick="viewEscalation('esc_001')" data-mock="true">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-3 mb-2">
+                                        <h4 class="font-medium text-foreground">customer@demo.com</h4>
+                                        <span class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">Escalated</span>
+                                    </div>
+                                    <p class="text-sm text-muted-foreground mb-2">Last message: "I need to speak with a human agent about my refund"</p>
+                                    <p class="text-xs text-muted-foreground">Confidence: 0.45 | 2 hours ago</p>
+                                </div>
+                                <button class="text-sm bg-primary text-primary-foreground px-3 py-1 rounded hover:bg-primary/90">View Chat</button>
+                            </div>
+                        </div>
+                        
+                        <div class="p-6 hover:bg-muted/50 cursor-pointer" onclick="viewEscalation('esc_002')" data-mock="true">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-3 mb-2">
+                                        <h4 class="font-medium text-foreground">john.doe@email.com</h4>
+                                        <span class="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">Escalated</span>
+                                    </div>
+                                    <p class="text-sm text-muted-foreground mb-2">Last message: "The order status information seems incorrect"</p>
+                                    <p class="text-xs text-muted-foreground">Confidence: 0.38 | 5 hours ago</p>
+                                </div>
+                                <button class="text-sm bg-primary text-primary-foreground px-3 py-1 rounded hover:bg-primary/90">View Chat</button>
+                            </div>
+                        </div>
+                        
+                        <div class="p-6 hover:bg-muted/50 cursor-pointer" onclick="viewEscalation('esc_003')" data-mock="true">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-3 mb-2">
+                                        <h4 class="font-medium text-foreground">sarah.wilson@gmail.com</h4>
+                                        <span class="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">In Review</span>
+                                    </div>
+                                    <p class="text-sm text-muted-foreground mb-2">Last message: "I received the wrong item in my order"</p>
+                                    <p class="text-xs text-muted-foreground">Confidence: 0.52 | 1 day ago</p>
+                                </div>
+                                <button class="text-sm bg-primary text-primary-foreground px-3 py-1 rounded hover:bg-primary/90">View Chat</button>
+                            </div>
+                        </div>
+                        <!-- @END_MAP )) -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: AdminDashboard -->
+        
+        <!-- Escalation Detail Modal -->
+        <!-- @COMPONENT: EscalationModal [detailed view of escalated conversation] -->
+        <div id="escalation-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-card rounded-lg w-full max-w-2xl max-h-[80vh] overflow-hidden">
+                <div class="p-6 border-b border-border flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-foreground">Escalated Conversation</h2>
+                    <button onclick="closeEscalationModal()" class="text-muted-foreground hover:text-foreground">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto" style="max-height: 60vh;">
+                    <div class="mb-4 p-3 bg-muted rounded-lg">
+                        <p class="text-sm font-medium text-foreground">Customer: customer@demo.com</p>
+                        <p class="text-xs text-muted-foreground">Escalated: 2 hours ago | Confidence: 0.45</p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-end">
+                            <div class="chat-bubble-user text-white p-3 rounded-lg max-w-xs">
+                                <p class="text-sm">Where is my order? I placed it 5 days ago.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-start">
+                            <div class="chat-bubble-bot text-foreground p-3 rounded-lg max-w-xs">
+                                <p class="text-sm">I can help you track your order. Let me look that up for you. Your order #12345 is currently in transit and should arrive within 2-3 business days.</p>
+                                <p class="text-xs text-muted-foreground mt-2">Confidence: 0.82</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end">
+                            <div class="chat-bubble-user text-white p-3 rounded-lg max-w-xs">
+                                <p class="text-sm">That doesn't seem right. The tracking number you gave me doesn't work.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-start">
+                            <div class="chat-bubble-bot text-foreground p-3 rounded-lg max-w-xs">
+                                <p class="text-sm">I apologize for the confusion. Let me check your refund status instead. I'm having trouble accessing the correct information for your order.</p>
+                                <p class="text-xs text-muted-foreground mt-2">Confidence: 0.45</p>
+                            </div>
+                        </div>
+                        
+                        <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p class="text-sm font-medium text-red-800">🚨 Escalated to Human Agent</p>
+                            <p class="text-xs text-red-600 mt-1">Low confidence detected (0.45). Customer requested human assistance.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6 border-t border-border">
+                    <div class="flex space-x-3">
+                        <button class="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 text-sm">Assign to Agent</button>
+                        <button class="bg-secondary text-secondary-foreground px-4 py-2 rounded-md hover:bg-secondary/90 text-sm">Mark Resolved</button>
+                        <button onclick="closeEscalationModal()" class="bg-muted text-muted-foreground px-4 py-2 rounded-md hover:bg-muted/80 text-sm">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: EscalationModal -->
+        
+    </div>
+    <!-- @END_COMPONENT: App -->
+    
+    <script>
+        // @STATE: currentUser:object = null
+        // @STATE: currentView:string = 'login'
+        // @STATE: supportChatOpen:boolean = false
+        // @STATE: currentFAQCategory:string = 'orders'
+        // @STATE: chatMessages:array = []
+        
+        (function() {
+            // Mock user data and application state
+            let currentUser = null;
+            let supportChatOpen = false;
+            let currentFAQCategory = 'orders';
+            let chatMessages = [
+                { type: 'bot', content: "Hello! I'm your AI assistant. How can I help you today?", confidence: null }
+            ];
+            
+            // Mock data for orders and refunds
+            const mockOrderData = {
+                '12345': { status: 'In Transit', eta: '2-3 business days', orderId: '12345' },
+                '12346': { status: 'Delivered', eta: 'Completed', orderId: '12346' },
+                '12347': { status: 'Processing', eta: '1-2 business days', orderId: '12347' }
+            };
+            
+            const mockRefundData = {
+                '12345': { status: 'Processing', orderId: '12345' },
+                '12346': { status: 'Completed', orderId: '12346' },
+                '12347': { status: 'Pending', orderId: '12347' }
+            };
+            
+            // Authentication functions
+            window.handleLogin = function() {
+                const role = document.getElementById('role-select').value;
+                
+                // TODO: Implement real authentication with Supabase
+                currentUser = {
+                    email: role === 'admin' ? 'admin@demo.com' : 'customer@demo.com',
+                    role: role,
+                    id: role === 'admin' ? 'admin_1' : 'customer_1'
+                };
+                
+                document.getElementById('login-screen').classList.add('hidden');
+                
+                if (role === 'customer') {
+                    document.getElementById('customer-interface').classList.remove('hidden');
+                    document.getElementById('support-toggle').classList.remove('hidden');
+                } else {
+                    document.getElementById('admin-interface').classList.remove('hidden');
+                }
+            };
+            
+            window.handleLogout = function() {
+                currentUser = null;
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('customer-interface').classList.add('hidden');
+                document.getElementById('admin-interface').classList.add('hidden');
+                document.getElementById('support-toggle').classList.add('hidden');
+                document.getElementById('support-chat').classList.add('hidden');
+                supportChatOpen = false;
+            };
+            
+            // Support chat functions
+            window.toggleSupportChat = function() {
+                const chatContainer = document.getElementById('support-chat');
+                supportChatOpen = !supportChatOpen;
+                
+                if (supportChatOpen) {
+                    chatContainer.classList.remove('hidden');
+                    chatContainer.classList.add('flex');
+                } else {
+                    chatContainer.classList.add('hidden');
+                    chatContainer.classList.remove('flex');
+                }
+            };
+            
+            window.showFAQCategory = function(category) {
+                currentFAQCategory = category;
+                
+                // Update tab styles
+                document.querySelectorAll('.faq-tab').forEach(tab => {
+                    tab.classList.remove('bg-primary', 'text-primary-foreground');
+                    tab.classList.add('bg-muted', 'text-muted-foreground');
+                });
+                
+                event.target.classList.remove('bg-muted', 'text-muted-foreground');
+                event.target.classList.add('bg-primary', 'text-primary-foreground');
+                
+                // Show/hide FAQ categories
+                document.querySelectorAll('.faq-category').forEach(cat => cat.classList.add('hidden'));
+                document.getElementById(category + '-faqs').classList.remove('hidden');
+            };
+            
+            window.selectFAQ = function(question) {
+                const chatInput = document.getElementById('chat-input');
+                chatInput.value = question;
+                sendMessage();
+            };
+            
+            window.sendMessage = function() {
+                const chatInput = document.getElementById('chat-input');
+                const message = chatInput.value.trim();
+                
+                if (!message) return;
+                
+                // Add user message to chat
+                addMessageToChat('user', message);
+                chatInput.value = '';
+                
+                // Simulate GPT response with mock tool calls
+                setTimeout(() => {
+                    handleGPTResponse(message);
+                }, 1000);
+                
+                scrollToBottom();
+            };
+            
+            window.handleChatKeyPress = function(event) {
+                if (event.key === 'Enter') {
+                    sendMessage();
+                }
+            };
+            
+            function addMessageToChat(type, content, confidence = null) {
+                chatMessages.push({ type, content, confidence });
+                
+                const messagesContainer = document.getElementById('chat-messages');
+                const messageDiv = document.createElement('div');
+                
+                if (type === 'user') {
+                    messageDiv.innerHTML = `
+                        <div class="flex justify-end">
+                            <div class="chat-bubble-user text-white p-3 rounded-lg max-w-xs">
+                                <p class="text-sm">${content}</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const confidenceDisplay = confidence !== null ? 
+                        `<p class="text-xs text-muted-foreground mt-2">Confidence: ${confidence.toFixed(2)}</p>` : '';
+                    
+                    const escalateButton = confidence !== null && confidence < 0.6 ? 
+                        `<button onclick="escalateToHuman()" class="mt-2 text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">Chat with Human Agent</button>` : '';
+                    
+                    messageDiv.innerHTML = `
+                        <div class="flex justify-start">
+                            <div class="chat-bubble-bot text-foreground p-3 rounded-lg max-w-xs">
+                                <p class="text-sm">${content}</p>
+                                ${confidenceDisplay}
+                                ${escalateButton}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                messagesContainer.appendChild(messageDiv);
+                scrollToBottom();
+            }
+            
+            function handleGPTResponse(userMessage) {
+                // TODO: Implement real GPT API call using GitHub Models API
+                let response = '';
+                let confidence = Math.random() * 0.4 + 0.6; // Random confidence between 0.6-1.0
+                
+                // Check for order-related queries
+                if (userMessage.toLowerCase().includes('order') || userMessage.toLowerCase().includes('track')) {
+                    const orderInfo = getOrderStatus('customer_1', '12345');
+                    response = `I found your order #${orderInfo.orderId}. Status: ${orderInfo.status}. Expected delivery: ${orderInfo.eta}.`;
+                    confidence = 0.85;
+                } 
+                // Check for refund-related queries
+                else if (userMessage.toLowerCase().includes('refund') || userMessage.toLowerCase().includes('return')) {
+                    const refundInfo = getRefundStatus('customer_1', '12345');
+                    response = `Your refund for order #${refundInfo.orderId} is currently ${refundInfo.status}.`;
+                    confidence = 0.72;
+                }
+                // Handle FAQs
+                else if (userMessage.includes('Where is my order?')) {
+                    const orderInfo = getOrderStatus('customer_1', '12345');
+                    response = `Your order #${orderInfo.orderId} is ${orderInfo.status}. Expected delivery: ${orderInfo.eta}.`;
+                    confidence = 0.88;
+                } else if (userMessage.includes('return policy')) {
+                    response = 'Our return policy allows returns within 30 days of purchase. Items must be in original condition with tags attached.';
+                    confidence = 0.92;
+                } else if (userMessage.includes('refund')) {
+                    response = 'Refunds are processed within 3-5 business days after we receive your returned item. You will receive an email confirmation once processed.';
+                    confidence = 0.89;
+                }
+                // Generic responses for other queries
+                else {
+                    const responses = [
+                        "I understand your concern. Let me help you with that information.",
+                        "Thank you for reaching out. I'll do my best to assist you with your question.",
+                        "I'm not entirely sure about that specific issue. Let me try to help you find the right information."
+                    ];
+                    response = responses[Math.floor(Math.random() * responses.length)];
+                    confidence = Math.random() * 0.3 + 0.3; // Lower confidence for generic responses
+                }
+                
+                addMessageToChat('bot', response, confidence);
+            }
+            
+            // Mock tool functions
+            function getOrderStatus(userId, orderId) {
+                return mockOrderData[orderId] || { status: 'Not Found', eta: 'N/A', orderId: orderId };
+            }
+            
+            function getRefundStatus(userId, orderId) {
+                return mockRefundData[orderId] || { status: 'Not Found', orderId: orderId };
+            }
+            
+            window.escalateToHuman = function() {
+                // TODO: Save chat transcript to Supabase
+                addMessageToChat('bot', '🚨 Your conversation has been escalated to a human agent. An agent will be with you shortly.', null);
+                
+                // Mock escalation data save
+                console.log('Escalation saved:', {
+                    userId: currentUser.id,
+                    userEmail: currentUser.email,
+                    chatHistory: chatMessages,
+                    timestamp: new Date().toISOString()
+                });
+            };
+            
+            function scrollToBottom() {
+                const messagesContainer = document.getElementById('chat-messages');
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+            
+            // Admin functions
+            window.viewEscalation = function(escalationId) {
+                document.getElementById('escalation-modal').classList.remove('hidden');
+            };
+            
+            window.closeEscalationModal = function() {
+                document.getElementById('escalation-modal').classList.add('hidden');
+            };
+            
+            // Initialize the application
+            document.addEventListener('DOMContentLoaded', function() {
+                // Show login screen by default
+                document.getElementById('login-screen').classList.remove('hidden');
+            });
+        })();
+    </script>
+</body>
+</html>

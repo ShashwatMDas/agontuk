@@ -35,6 +35,8 @@ export interface IStorage {
 export class SupabaseStorage implements IStorage {
   private supabase;
 
+  private isInitialized = false;
+
   constructor() {
     const supabaseUrl = process.env.SUPABASE_URL!;
     const supabaseKey = process.env.SUPABASE_ANON_KEY!;
@@ -44,93 +46,129 @@ export class SupabaseStorage implements IStorage {
     }
     
     this.supabase = createClient(supabaseUrl, supabaseKey);
-    this.initializeData();
   }
 
-  private async initializeData() {
-    // Check if tables exist and seed demo data if needed
-    await this.seedDemoData();
+  private async ensureInitialized() {
+    if (!this.isInitialized) {
+      await this.seedDemoData();
+      this.isInitialized = true;
+    }
   }
 
   private async seedDemoData() {
-    // Check if demo users exist
-    const { data: existingUsers } = await this.supabase
-      .from('users')
-      .select('email')
-      .in('email', ['customer@demo.com', 'admin@demo.com']);
-    
-    if (!existingUsers || existingUsers.length === 0) {
-      // Create demo users
-      await this.supabase.from('users').insert([
-        {
-          email: 'customer@demo.com',
-          password: 'password',
-          role: 'customer'
-        },
-        {
-          email: 'admin@demo.com', 
-          password: 'password',
-          role: 'admin'
+    try {
+      console.log('🌱 Seeding demo data...');
+      
+      // Check if demo users exist
+      const { data: existingUsers, error: userCheckError } = await this.supabase
+        .from('users')
+        .select('email')
+        .in('email', ['customer@demo.com', 'admin@demo.com']);
+      
+      if (userCheckError) {
+        console.error('❌ Error checking existing users:', userCheckError);
+        return;
+      }
+      
+      if (!existingUsers || existingUsers.length === 0) {
+        console.log('👤 Creating demo users...');
+        const { error: userInsertError } = await this.supabase.from('users').insert([
+          {
+            email: 'customer@demo.com',
+            password: 'password',
+            role: 'customer'
+          },
+          {
+            email: 'admin@demo.com', 
+            password: 'password',
+            role: 'admin'
+          }
+        ]);
+        
+        if (userInsertError) {
+          console.error('❌ Error creating demo users:', userInsertError);
+        } else {
+          console.log('✅ Demo users created successfully');
         }
-      ]);
-    }
+      } else {
+        console.log('✅ Demo users already exist');
+      }
 
-    // Check if demo products exist
-    const { data: existingProducts } = await this.supabase
-      .from('products')
-      .select('id')
-      .limit(1);
-    
-    if (!existingProducts || existingProducts.length === 0) {
-      // Create demo products
-      await this.supabase.from('products').insert([
-        {
-          name: 'Premium Wireless Headphones',
-          description: 'Active noise cancellation, 30hr battery',
-          price: 199.99,
-          image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300',
-          category: 'Electronics'
-        },
-        {
-          name: 'Ultra-thin Laptop',
-          description: 'Intel i7, 16GB RAM, 512GB SSD',
-          price: 1299.99,
-          image_url: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300',
-          category: 'Computers'
-        },
-        {
-          name: 'Smart Fitness Watch',
-          description: 'Heart rate monitor, GPS, waterproof',
-          price: 299.99,
-          image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300',
-          category: 'Wearables'
-        },
-        {
-          name: 'Professional Camera',
-          description: '24MP, 4K video, weather sealed',
-          price: 899.99,
-          image_url: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300',
-          category: 'Photography'
-        },
-        {
-          name: 'Gaming Mouse Pro',
-          description: 'RGB lighting, 12000 DPI, wireless',
-          price: 89.99,
-          image_url: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300',
-          category: 'Gaming'
-        },
-        {
-          name: 'Flagship Smartphone',
-          description: '128GB, Triple camera, 5G ready',
-          price: 799.99,
-          image_url: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300',
-          category: 'Mobile'
+      
+      // Check if demo products exist
+      const { data: existingProducts, error: productCheckError } = await this.supabase
+        .from('products')
+        .select('id')
+        .limit(1);
+      
+      if (productCheckError) {
+        console.error('❌ Error checking existing products:', productCheckError);
+        return;
+      }
+      
+      if (!existingProducts || existingProducts.length === 0) {
+        console.log('🛍️ Creating demo products...');
+        const { error: productInsertError } = await this.supabase.from('products').insert([
+          {
+            name: 'Premium Wireless Headphones',
+            description: 'Active noise cancellation, 30hr battery',
+            price: 199.99,
+            image_url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300',
+            category: 'Electronics'
+          },
+          {
+            name: 'Ultra-thin Laptop',
+            description: 'Intel i7, 16GB RAM, 512GB SSD',
+            price: 1299.99,
+            image_url: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300',
+            category: 'Computers'
+          },
+          {
+            name: 'Smart Fitness Watch',
+            description: 'Heart rate monitor, GPS, waterproof',
+            price: 299.99,
+            image_url: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300',
+            category: 'Wearables'
+          },
+          {
+            name: 'Professional Camera',
+            description: '24MP, 4K video, weather sealed',
+            price: 899.99,
+            image_url: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300',
+            category: 'Photography'
+          },
+          {
+            name: 'Gaming Mouse Pro',
+            description: 'RGB lighting, 12000 DPI, wireless',
+            price: 89.99,
+            image_url: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300',
+            category: 'Gaming'
+          },
+          {
+            name: 'Flagship Smartphone',
+            description: '128GB, Triple camera, 5G ready',
+            price: 799.99,
+            image_url: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=300',
+            category: 'Mobile'
+          }
+        ]);
+        
+        if (productInsertError) {
+          console.error('❌ Error creating demo products:', productInsertError);
+        } else {
+          console.log('✅ Demo products created successfully');
         }
-      ]);
+      } else {
+        console.log('✅ Demo products already exist');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error in seedDemoData:', error);
     }
   }
 
   async getUser(id: string): Promise<User | undefined> {
+    await this.ensureInitialized();
     const { data, error } = await this.supabase
       .from('users')
       .select('*')
@@ -142,6 +180,7 @@ export class SupabaseStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
+    await this.ensureInitialized();
     const { data, error } = await this.supabase
       .from('users')
       .select('*')
@@ -168,6 +207,7 @@ export class SupabaseStorage implements IStorage {
   }
 
   async getProducts(): Promise<Product[]> {
+    await this.ensureInitialized();
     const { data, error } = await this.supabase
       .from('products')
       .select('*');

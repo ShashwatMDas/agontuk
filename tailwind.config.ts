@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-export default {
+const config: Config = {
   darkMode: ["class"],
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
@@ -41,25 +41,26 @@ export default {
           DEFAULT: "var(--destructive)",
           foreground: "var(--destructive-foreground)",
         },
-        border: "var(--border)",
-        input: "var(--input)",
-        ring: "var(--ring)",
+        // Add fallback colors here for border and others
+        border: "var(--border, #e5e7eb)", // fallback light gray
+        input: "var(--input, #f9fafb)", // example fallback
+        ring: "var(--ring, #2563eb)", // example fallback (blue)
         chart: {
-          "1": "var(--chart-1)",
-          "2": "var(--chart-2)",
-          "3": "var(--chart-3)",
-          "4": "var(--chart-4)",
-          "5": "var(--chart-5)",
+          "1": "var(--chart-1, #3b82f6)",
+          "2": "var(--chart-2, #10b981)",
+          "3": "var(--chart-3, #f59e0b)",
+          "4": "var(--chart-4, #ef4444)",
+          "5": "var(--chart-5, #8b5cf6)",
         },
         sidebar: {
-          DEFAULT: "var(--sidebar-background)",
-          foreground: "var(--sidebar-foreground)",
-          primary: "var(--sidebar-primary)",
-          "primary-foreground": "var(--sidebar-primary-foreground)",
-          accent: "var(--sidebar-accent)",
-          "accent-foreground": "var(--sidebar-accent-foreground)",
-          border: "var(--sidebar-border)",
-          ring: "var(--sidebar-ring)",
+          DEFAULT: "var(--sidebar-background, #1f2937)",
+          foreground: "var(--sidebar-foreground, #d1d5db)",
+          primary: "var(--sidebar-primary, #3b82f6)",
+          "primary-foreground": "var(--sidebar-primary-foreground, #ffffff)",
+          accent: "var(--sidebar-accent, #10b981)",
+          "accent-foreground": "var(--sidebar-accent-foreground, #ffffff)",
+          border: "var(--sidebar-border, #374151)",
+          ring: "var(--sidebar-ring, #2563eb)",
         },
       },
       fontFamily: {
@@ -69,20 +70,12 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
       },
       animation: {
@@ -92,4 +85,6 @@ export default {
     },
   },
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
-} satisfies Config;
+};
+
+export default config;
